@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>viddetect — Video Downloader</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,sans-serif;background:#0f0f14;color:#e1e1e6;min-height:100vh}
+.app{max-width:640px;margin:0 auto;padding:2.5rem 1.5rem;min-height:100vh;display:flex;flex-direction:column}
+header{text-align:center;margin-bottom:2rem}
+h1{font-size:2.8rem;font-weight:800;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-1px}
+.subtitle{color:#666;margin-top:.4rem;font-size:1rem}
+.input-row{display:flex;gap:.5rem}
+input{flex:1;padding:.85rem 1rem;border:1px solid #2a2a35;border-radius:8px;background:#1a1a24;color:#e1e1e6;font-size:1rem;outline:none;transition:border-color .2s}
+input:focus{border-color:#667eea}
+input::placeholder{color:#555}
+button{padding:.85rem 1.5rem;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;transition:opacity .2s;white-space:nowrap}
+button:hover{opacity:.9}
+button:disabled{opacity:.5;cursor:not-allowed}
+.loading{display:flex;flex-direction:column;align-items:center;gap:.75rem;padding:2.5rem 0;color:#666}
+.spinner{width:36px;height:36px;border:3px solid #2a2a35;border-top-color:#667eea;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.result{animation:fadeIn .3s ease;margin-top:1.5rem}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.header-card{background:#1a1a24;border:1px solid #2a2a35;border-radius:12px;padding:1.25rem 1.5rem;margin-bottom:1rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+.source-badge{padding:.3rem .85rem;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:100px;font-size:.85rem;font-weight:600}
+.meta{color:#888;font-size:.85rem;margin-left:auto}
+.meta span{margin-left:1rem}
+.thumbnail{width:100%;max-height:240px;object-fit:cover;border-radius:10px;margin-bottom:1rem}
+.formats{display:flex;flex-direction:column;gap:.35rem}
+.format-row{display:flex;justify-content:space-between;align-items:center;padding:.65rem 1rem;background:#15151e;border:1px solid #2a2a35;border-radius:8px;gap:.75rem;transition:border-color .2s}
+.format-row:hover{border-color:#3a3a4a}
+.format-left{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.res-badge{font-weight:700;font-size:1.1rem;color:#fff;min-width:50px}
+.ext-tag{padding:.2rem .5rem;background:#2a2a35;border-radius:4px;font-size:.72rem;color:#aaa;font-weight:600}
+.size-tag{font-size:.8rem;color:#666}
+.format-actions{display:flex;gap:.35rem;flex-shrink:0}
+.btn{display:inline-block;padding:.45rem 1rem;border-radius:6px;font-size:.82rem;font-weight:600;text-decoration:none;cursor:pointer;transition:opacity .2s;white-space:nowrap;border:none}
+.btn:hover{opacity:.85}
+.btn-dl{background:#2d7d46;color:#fff}
+.btn-mp3{background:#b45f1a;color:#fff}
+.btn-copy{background:0 0;color:#888;border:1px solid #3a3a4a}
+.mp3-card{display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;background:#15151e;border:1px solid #2a2a35;border-radius:8px;margin-top:.5rem}
+.mp3-icon{font-size:1.5rem}
+.mp3-body{flex:1}
+.mp3-body strong{display:block;font-size:.9rem;color:#ccc}
+.mp3-desc{font-size:.78rem;color:#666}
+.error-box{background:rgba(255,82,82,.1);border:1px solid rgba(255,82,82,.3);color:#ff5252;padding:1rem 1.5rem;border-radius:8px;margin-top:1rem;text-align:center}
+.history{margin-top:auto;padding-top:2rem}
+.history h3{color:#444;font-size:.8rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:.4rem}
+.history-list{display:flex;flex-direction:column;gap:.25rem}
+.history-item{display:flex;justify-content:space-between;align-items:center;padding:.4rem .7rem;background:#15151e;border:1px solid #2a2a35;border-radius:6px;cursor:pointer;font-size:.82rem;transition:border-color .2s}
+.history-item:hover{border-color:#667eea}
+.history-item .h-url{color:#999;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70%}
+.history-item .h-src{color:#667eea;font-weight:600;font-size:.72rem}
+footer{text-align:center;color:#2a2a2a;font-size:.72rem;padding:1.5rem 0 0}
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:#1a1a24;border:1px solid #2a2a35;padding:.6rem 1.2rem;border-radius:8px;font-size:.85rem;opacity:0;transition:opacity .3s;pointer-events:none;z-index:100}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>viddetect</h1>
+    <p class="subtitle">Paste a URL to detect the source and get download links</p>
+  </header>
+
+  <form id="form" class="input-row">
+    <input type="text" id="urlInput" placeholder="e.g. https://youtube.com/watch?v=..." autofocus spellcheck="false">
+    <button type="submit" id="detectBtn">Detect</button>
+  </form>
+
+  <div id="result"></div>
+  <div id="loading" class="loading" style="display:none">
+    <div class="spinner"></div>
+    <p>Extracting formats with yt-dlp...</p>
+  </div>
+
+  <div class="history" id="historyContainer" style="display:none">
+    <h3>History</h3>
+    <div id="historyList" class="history-list"></div>
+  </div>
+  <footer>For personal/educational use only</footer>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+const form = document.getElementById('form')
+const input = document.getElementById('urlInput')
+const resultDiv = document.getElementById('result')
+const loadingDiv = document.getElementById('loading')
+const detectBtn = document.getElementById('detectBtn')
+const historyContainer = document.getElementById('historyContainer')
+const historyList = document.getElementById('historyList')
+const toast = document.getElementById('toast')
+
+let history = JSON.parse(localStorage.getItem('viddetect-history') || '[]')
+
+function showToast(msg) {
+  toast.textContent = msg
+  toast.classList.add('show')
+  clearTimeout(toast._t)
+  toast._t = setTimeout(() => toast.classList.remove('show'), 2000)
+}
+
+function formatSize(bytes) {
+  if (!bytes) return null
+  const u = ['B','KB','MB','GB']; let i=0; let s=bytes
+  while(s>=1024&&i<u.length-1){s/=1024;i++}
+  return `${s.toFixed(1)} ${u[i]}`
+}
+
+function formatDur(s) {
+  if(!s)return null; const h=Math.floor(s/3600); const m=Math.floor((s%3600)/60); const se=s%60
+  return h?`${h}:${String(m).padStart(2,'0')}:${String(se).padStart(2,'0')}`:`${m}:${String(se).padStart(2,'0')}`
+}
+
+function shortenUrl(url) {
+  try{const u=new URL(url);return u.hostname.replace('www.','')+u.pathname.replace(/\/$/,'').slice(0,40)}catch{return url}
+}
+
+function renderHistory() {
+  if(!history.length){historyContainer.style.display='none';return}
+  historyContainer.style.display='block'
+  historyList.innerHTML=history.map((h,i)=>
+    `<div class="history-item" onclick="analyze('${h.url.replace(/'/g,"\\'")}')">
+      <span class="h-url">${shortenUrl(h.url)}</span>
+      <span class="h-src">${h.source}</span>
+    </div>`
+  ).join('')
+}
+
+function addHistory(url, source) {
+  history=history.filter(h=>h.url!==url)
+  history.unshift({url,source})
+  if(history.length>10)history=history.slice(0,10)
+  localStorage.setItem('viddetect-history',JSON.stringify(history))
+  renderHistory()
+}
+
+function renderResult(data) {
+  const {source,title,thumbnail,duration,formats,uploader,webpageUrl}=data
+
+  let html=`<div class="result">`
+
+  html+=`<div class="header-card">
+    <span class="source-badge">${source.name}</span>
+    ${uploader?`<span style="color:#888;font-size:.85rem">${uploader}</span>`:''}
+    <span class="meta">
+      ${duration?`<span>${formatDur(duration)}</span>`:''}
+      ${formats.length?`<span>${formats.length} quality</span>`:''}
+    </span>
+  </div>`
+
+  if(thumbnail)html+=`<img src="${thumbnail}" alt="" class="thumbnail" loading="lazy">`
+  if(title)html+=`<h2 style="font-size:1.1rem;margin-bottom:.75rem;color:#ccc">${title}</h2>`
+
+  html+=`<div class="formats">`
+  for(const f of formats){
+    const dlUrl=`/api/download?url=${encodeURIComponent(webpageUrl||'')}&quality=${encodeURIComponent(f.height||'best')}&title=${encodeURIComponent(title||'')}`
+
+    html+=`<div class="format-row">
+      <div class="format-left">
+        <span class="res-badge">${f.resolution}</span>
+        <span class="ext-tag">${f.format||f.ext?.toUpperCase()||'?'}</span>
+        ${f.size?`<span class="size-tag">${formatSize(f.size)}</span>`:''}
+      </div>
+      <div class="format-actions">
+        <a href="${dlUrl}" class="btn btn-dl">MP4</a>
+        <button class="btn btn-copy" onclick="copyUrl('${dlUrl}',this)">URL</button>
+      </div>
+    </div>`
+  }
+  const mp3Url=`/api/download?url=${encodeURIComponent(webpageUrl||'')}&quality=best&title=${encodeURIComponent(title||'')}&format=mp3`
+  html+=`</div>
+  <div class="mp3-card">
+    <div class="mp3-icon">🎵</div>
+    <div class="mp3-body">
+      <strong>Audio Only (MP3)</strong>
+      <span class="mp3-desc">192 kbps — extracted from the source video</span>
+    </div>
+    <a href="${mp3Url}" class="btn btn-mp3">MP3</a>
+  </div>`
+  html+=`</div>`
+  resultDiv.innerHTML=html
+  addHistory(data.webpageUrl||'',source.name)
+}
+
+function renderError(msg) {
+  resultDiv.innerHTML=`<div class="error-box">${msg}</div>`
+}
+
+async function analyze(url) {
+  const trimmed=url.trim()
+  if(!trimmed)return
+  let finalUrl=trimmed
+  if(!/^https?:\/\//i.test(finalUrl))finalUrl='https://'+finalUrl
+
+  resultDiv.innerHTML=''
+  loadingDiv.style.display='flex'
+  detectBtn.disabled=true
+
+  try {
+    const res=await fetch('/api/analyze',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({url:finalUrl})
+    })
+    const data=await res.json()
+    if(!res.ok||!data.success){
+      renderError(data.error||'Failed to analyze URL')
+      return
+    }
+    renderResult(data)
+    input.value=trimmed
+  }catch(err){
+    renderError('Connection error. Is the server running?')
+  }finally{
+    loadingDiv.style.display='none'
+    detectBtn.disabled=false
+  }
+}
+
+function copyUrl(url,btn){
+  navigator.clipboard.writeText(url).then(()=>{
+    btn.textContent='Copied!'
+    setTimeout(()=>btn.textContent='URL',1500)
+  }).catch(()=>showToast('Failed to copy'))
+}
+
+form.addEventListener('submit',e=>{e.preventDefault();analyze(input.value)})
+renderHistory()
+</script>
+</body>
+</html>
