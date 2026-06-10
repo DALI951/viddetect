@@ -1,18 +1,15 @@
-import { fileURLToPath } from 'url'
-import { dirname, join } from 'path'
-import { spawn, spawnSync, execSync } from 'child_process'
+import { join } from 'path'
+import { spawn, spawnSync } from 'child_process'
 import { createWriteStream, existsSync } from 'fs'
 import express from 'express'
 import { detectSource } from './detect.js'
-import { extractFormats, getPlaylistInfo } from './extract.js'
+import { extractFormats, getPlaylistInfo, YTDLP_PATH } from './extract.js'
 import { extractInstagramPost, extractInstagramStory, extractInstagramProfile } from './instagram.js'
 import { helpers } from 'ytdlp-nodejs'
 import https from 'https'
 import { cacheGet, cacheSet } from './cache.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const BIN_DIR = join(__dirname, 'node_modules', 'ytdlp-nodejs', 'bin')
-const YTDLP_PATH = join(BIN_DIR, 'yt-dlp.exe')
 
 process.on('uncaughtException', err => {
   console.error('SERVER CRASH AVERTED — uncaught exception:', err.message)

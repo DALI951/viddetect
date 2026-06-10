@@ -1,13 +1,11 @@
 import { spawnSync } from 'child_process'
-import { YtDlp, helpers } from 'ytdlp-nodejs'
+import { YtDlp, helpers, BIN_DIR } from 'ytdlp-nodejs'
 import { existsSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
 export const ytdlp = new YtDlp()
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const BIN_DIR = join(__dirname, 'node_modules', 'ytdlp-nodejs', 'bin')
-const YTDLP_PATH = join(BIN_DIR, 'yt-dlp.exe')
+export const YTDLP_PATH = join(BIN_DIR, 'yt-dlp')
 
 function ytDlpJson(args) {
   const p = spawnSync(YTDLP_PATH, args, { stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 50 * 1024 * 1024 })
