@@ -1,0 +1,1 @@
+run = "cd client && npm install --ignore-scripts && npm run build; cd .. && npm install --ignore-scripts && node server.js"
