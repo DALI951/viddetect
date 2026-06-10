@@ -2,7 +2,7 @@ services:
   - type: web
     name: viddetect
     env: node
-    buildCommand: npm install; cd client; npm install; npm run build
+    buildCommand: npm install && cd client && npm install && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_VERSION
