@@ -2,6 +2,7 @@ import { spawnSync } from 'child_process'
 import { YtDlp, helpers, BIN_DIR } from 'ytdlp-nodejs'
 import { join } from 'path'
 import { existsSync } from 'fs'
+import { getRdMixPage } from './scrape-playlist.js'
 
 export const ytdlp = new YtDlp()
 const PKG_EXE = join(BIN_DIR, 'yt-dlp.exe')
@@ -9,13 +10,24 @@ const PKG_BIN = join(BIN_DIR, 'yt-dlp')
 export const YTDLP_PATH = existsSync(PKG_EXE) ? PKG_EXE : existsSync(PKG_BIN) ? PKG_BIN : 'yt-dlp'
 
 function ytDlpJson(args) {
-  const p = spawnSync(YTDLP_PATH, args, { stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 50 * 1024 * 1024 })
+  const p = spawnSync(YTDLP_PATH, args, { stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 50 * 1024 * 1024, timeout: 60000 })
   if (p.error) throw p.error
+  if (p.signal === 'SIGTERM') throw new Error('yt-dlp timed out after 60s')
   if (p.status !== 0) throw new Error((p.stderr || '').toString().trim() || `yt-dlp exited with code ${p.status}`)
   try { return JSON.parse(p.stdout.toString()) } catch { throw new Error('Invalid yt-dlp output: ' + (p.stderr || '').toString().trim()) }
 }
 
+function isRdMix(url) {
+  try {
+    const list = new URL(url).searchParams.get('list') || ''
+    return /^RD/i.test(list)
+  } catch { return false }
+}
+
 export async function getPlaylistInfo(url) {
+  if (isRdMix(url)) {
+    return { title: 'YouTube Mix', count: null, url }
+  }
   try {
     const result = ytDlpJson(['--flat-playlist', '--dump-single-json', url])
     if (!result?.entries?.length) return null
@@ -39,7 +51,46 @@ function mapEntry(e) {
   }
 }
 
+function getListIdFromUrl(url) {
+  try { return new URL(url).searchParams.get('list') || '' } catch { return '' }
+}
+
+async function checkBookmarkletCache(url) {
+  const listId = getListIdFromUrl(url)
+  if (!listId) return null
+  try {
+    const res = await fetch(`http://localhost:3001/api/bookmarklet-data?listId=${encodeURIComponent(listId)}`)
+    const d = await res.json()
+    if (d?.data?.entries?.length) {
+      console.log(`[bookmarklet] using cached entries for ${listId}`)
+      return d.data
+    }
+  } catch {}
+  return null
+}
+
+function paginateEntries(entries, page, perPage) {
+  const start = (page - 1) * perPage
+  const end = start + perPage
+  return {
+    entries: entries.slice(start, end),
+    totalCount: entries.length,
+    hasMore: end < entries.length,
+  }
+}
+
 export async function getPlaylistPage(url, page = 1, perPage = 10) {
+  if (isRdMix(url)) {
+    const cached = await checkBookmarkletCache(url)
+    if (cached) {
+      return { ...paginateEntries(cached.entries, page, perPage), playlistTitle: cached.playlistTitle }
+    }
+    try {
+      return await getRdMixPage(url, page, perPage)
+    } catch (e) {
+      console.error('RD mix scraper failed, falling back to yt-dlp:', e.message)
+    }
+  }
   const start = (page - 1) * perPage + 1
   const end = start + perPage - 1
   const result = ytDlpJson([

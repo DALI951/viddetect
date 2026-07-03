@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>viddetect — YouTube Mix Bookmarklet</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #111; color: #eee; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+.card { max-width: 520px; padding: 2.5rem; text-align: center; }
+h1 { font-size: 1.5rem; margin-bottom: .5rem; }
+p { color: #999; line-height: 1.6; margin-bottom: 1.5rem; font-size: .95rem; }
+.bookmarklet { display: inline-block; padding: 1rem 2rem; background: #e05a3a; color: #fff; text-decoration: none; font-size: 1.1rem; border-radius: 8px; cursor: grab; font-weight: 600; box-shadow: 0 4px 20px rgba(224,90,58,.3); user-select: none; }
+.bookmarklet:hover { background: #c94d2f; }
+.bookmarklet:active { cursor: grabbing; }
+.steps { text-align: left; margin-top: 2rem; }
+.steps ol { padding-left: 1.2rem; color: #ccc; }
+.steps li { margin-bottom: .8rem; font-size: .9rem; line-height: 1.5; }
+.steps code { background: #222; padding: .15rem .4rem; border-radius: 4px; font-size: .85rem; color: #e05a3a; }
+.hint { margin-top: 2rem; padding: 1rem; background: #1a1a1a; border-radius: 8px; font-size: .85rem; color: #888; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>YouTube Mix → viddetect</h1>
+  <p>Drag the button below to your bookmarks bar, then click it on any YouTube mix page to send the exact playlist to viddetect.</p>
+
+  <a class="bookmarklet" href="javascript:(function(){if(!window.ytInitialData)return alert('Not a YouTube page with playlist data');var d=window.ytInitialData;var listId=new URLSearchParams(location.search).get('list');if(!listId)return alert('No playlist on this page');var c=d.contents?.twoColumnWatchNextResults?.playlist?.playlist?.contents||d.contents?.twoColumnWatchNextResults?.secondaryResults?.secondaryResults?.results;if(!c)return alert('No playlist panel found');var e=[];for(var i=0;i<c.length;i++){var r=c[i]?.playlistPanelVideoRenderer;if(!r)continue;var t=r.title?.simpleText||r.title?.runs?.[0]?.text;if(!t)continue;var u='';if(r.navigationEndpoint?.commandMetadata?.webCommandMetadata?.url)u='https://www.youtube.com'+r.navigationEndpoint.commandMetadata.webCommandMetadata.url;else if(r.navigationEndpoint?.watchEndpoint?.videoId)u='https://www.youtube.com/watch?v='+r.navigationEndpoint.watchEndpoint.videoId;else if(r.videoId)u='https://www.youtube.com/watch?v='+r.videoId;if(!u)continue;e.push({title:t,url:u,thumbnail:r.thumbnail?.thumbnails?.[0]?.url||null,duration:r.lengthSeconds?parseInt(r.lengthSeconds):null})}if(!e.length)return alert('No entries found');fetch('http://localhost:3001/api/bookmarklet-data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({listId:listId,entries:e,pageUrl:location.href})}).then(function(r){return r.json()}).then(function(d){alert('Sent '+d.count+' videos to viddetect!')}).catch(function(e){alert('Error: '+e.message)})})()">↗ Send to viddetect</a>
+
+  <div class="steps">
+    <ol>
+      <li><strong>Drag</strong> the button above to your browser's bookmarks bar</li>
+      <li>Go to <strong>YouTube</strong> and open any mix or playlist page</li>
+      <li><strong>Click</strong> the bookmarklet — it reads the playlist data and sends it to viddetect</li>
+      <li>You'll see an alert: <code>Sent N videos to viddetect!</code></li>
+      <li>Go back to viddetect and click <strong>"Browse"</strong> on the playlist — the entries will be exactly what YouTube showed you</li>
+    </ol>
+  </div>
+
+  <div class="hint">
+    The data stays cached for 24 hours. Run the bookmarklet again on the same mix to refresh it.
+  </div>
+</div>
+</body>
+</html>

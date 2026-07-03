@@ -14,5 +14,8 @@
     "express": "^4.18.2",
     "instagram-url-direct": "^2.0.7",
     "ytdlp-nodejs": "^3.4.4"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.0"
   }
 }

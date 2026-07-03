@@ -1,0 +1,19 @@
+{
+  "name": "viddetect",
+  "description": "A tiny, fast JavaScript parser written in JavaScript.",
+  "type": "web-app",
+  "purpose": "utility",
+  "techStack": [
+    "Node.js",
+    "Express",
+    "C/C++",
+    "Docker",
+    "GitHub Actions",
+    "Git",
+    "Bundler",
+    "ESLint"
+  ],
+  "status": "completed",
+  "created": "2026-06-26",
+  "modified": "2026-06-26"
+}

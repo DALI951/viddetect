@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>viddetect — Chrome Extension</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #111; color: #eee; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+.card { max-width: 560px; padding: 2.5rem; }
+h1 { font-size: 1.4rem; margin-bottom: .5rem; }
+.sub { color: #999; margin-bottom: 2rem; font-size: .95rem; line-height: 1.5; }
+.steps { text-align: left; margin-bottom: 2rem; }
+.steps ol { padding-left: 1.2rem; color: #ccc; }
+.steps li { margin-bottom: 1rem; font-size: .9rem; line-height: 1.5; }
+.steps code { background: #222; padding: .2rem .5rem; border-radius: 4px; font-size: .85rem; color: #e05a3a; }
+.steps .folder { display: inline-block; background: #1a1a1a; padding: .3rem .6rem; border-radius: 4px; font-family: monospace; font-size: .85rem; color: #e05a3a; }
+.note { margin-top: 1.5rem; padding: 1rem; background: #1a1a1a; border-radius: 8px; font-size: .85rem; color: #888; line-height: 1.5; }
+.btn { display: inline-block; padding: .75rem 1.5rem; background: #e05a3a; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: .95rem; margin-bottom: 1.5rem; }
+.btn:hover { background: #c94d2f; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>viddetect Chrome Extension</h1>
+  <p class="sub">Once installed, whenever you visit a YouTube mix, the extension automatically sends the exact playlist data to viddetect. No manual steps needed.</p>
+
+  <a class="btn" href="chrome://extensions" target="_blank">Open chrome://extensions</a>
+
+  <div class="steps">
+    <ol>
+      <li>Click the button above to open the Extensions page</li>
+      <li>Enable <strong>"Developer mode"</strong> (toggle in the top-right corner)</li>
+      <li>Click <strong>"Load unpacked"</strong></li>
+      <li>Navigate to and select this folder:<br>
+        <span class="folder">C:\Project\viddetect\extension</span>
+      </li>
+      <li>The extension is now installed. Go to any YouTube mix — you'll see a toast: <code>Sent N videos to viddetect</code></li>
+      <li>Switch back to viddetect and click <strong>"Browse"</strong> on the mix — entries will match exactly</li>
+    </ol>
+  </div>
+
+  <div class="note">
+    The extension only runs on YouTube pages and only sends playlist data from <code>window.ytInitialData</code> to <code>localhost:3001</code>. No data is sent anywhere else. Source code is in <code>extension/content.js</code>.
+  </div>
+</div>
+</body>
+</html>

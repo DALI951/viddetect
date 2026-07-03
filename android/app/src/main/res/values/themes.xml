@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Viddetect" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#1a73e8</item>
+        <item name="colorPrimaryVariant">#1557b0</item>
+        <item name="colorOnPrimary">#ffffff</item>
+        <item name="colorSecondary">#03dac6</item>
+        <item name="android:statusBarColor">#1a73e8</item>
+    </style>
+</resources>

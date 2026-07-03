@@ -453,6 +453,38 @@ app.get('/api/download', async (req, res) => {
   }
 })
 
+const bookmarkletCache = new Map()
+
+app.post('/api/bookmarklet-data', (req, res) => {
+  const { listId, entries, playlistTitle, pageUrl } = req.body
+  if (!listId || !entries?.length) {
+    res.status(400).json({ success: false, error: 'Missing listId or entries' })
+    return
+  }
+  const cacheKey = listId + (pageUrl?.includes('start_radio=1') ? '_radio' : '')
+  bookmarkletCache.set(cacheKey, { entries, playlistTitle: playlistTitle || 'YouTube Mix', timestamp: Date.now() })
+  bookmarkletCache.set(listId, { entries, playlistTitle: playlistTitle || 'YouTube Mix', timestamp: Date.now() })
+  console.log(`[bookmarklet] received ${entries.length} entries for ${cacheKey}`)
+  res.json({ success: true, count: entries.length })
+})
+
+function getListIdFromUrl(url) {
+  try { return new URL(url).searchParams.get('list') || '' } catch { return '' }
+}
+
+app.get('/api/bookmarklet-data', (req, res) => {
+  const { listId, url } = req.query
+  const key = listId || getListIdFromUrl(url || '')
+  if (!key) { res.json({ data: null }); return }
+  const cached = bookmarkletCache.get(key)
+  if (cached && Date.now() - cached.timestamp < 86400000) {
+    res.json({ data: cached })
+  } else {
+    bookmarkletCache.delete(key)
+    res.json({ data: null })
+  }
+})
+
 app.get('/api/playlist', async (req, res) => {
   const { url, page: pageStr, perPage: perPageStr } = req.query
   if (!url) { res.status(400).json({ error: 'Missing url' }); return }
@@ -491,6 +523,16 @@ app.get('/api/playlist', async (req, res) => {
     res.status(400).json({ success: false, error: err.stderr || err.message })
   }
 })
+
+app.get('/bookmarklet', (req, res) => {
+  res.sendFile(join(__dirname, 'bookmarklet.html'))
+})
+
+app.get('/extension-install', (req, res) => {
+  res.sendFile(join(__dirname, 'extension-install.html'))
+})
+
+app.use('/extension', express.static(join(__dirname, 'extension')))
 
 if (hasReactBuild) {
   app.get('*', (req, res) => {

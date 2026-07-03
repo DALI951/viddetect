@@ -66,8 +66,12 @@ export default function App() {
   const [history, setHistory] = useState(() => JSON.parse(localStorage.getItem('vd-history') || '[]'))
   const [toast, setToast] = useState(null)
   const [preview, setPreview] = useState(null)
+  const [loadingStart, setLoadingStart] = useState(null)
+  const [loadingElapsed, setLoadingElapsed] = useState(null)
   const [playlistEntries, setPlaylistEntries] = useState(null)
   const [plLoading, setPlLoading] = useState(false)
+  const [plLoadStart, setPlLoadStart] = useState(null)
+  const [plLoadElapsed, setPlLoadElapsed] = useState(null)
   const [selectedVideos, setSelectedVideos] = useState(() => new Set())
   const [downloadQueue, setDownloadQueue] = useState(null)
   const [queueStatus, setQueueStatus] = useState({})
@@ -87,10 +91,28 @@ export default function App() {
     localStorage.setItem('vd-history', JSON.stringify(history))
   }, [history])
 
+  useEffect(() => {
+    if (!loading) { setLoadingElapsed(null); return }
+    const id = setInterval(() => {
+      setLoadingElapsed(Math.floor((Date.now() - loadingStart) / 1000))
+    }, 500)
+    return () => clearInterval(id)
+  }, [loading, loadingStart])
+
+  useEffect(() => {
+    if (!plLoading) { setPlLoadElapsed(null); return }
+    const id = setInterval(() => {
+      setPlLoadElapsed(Math.floor((Date.now() - plLoadStart) / 1000))
+    }, 500)
+    return () => clearInterval(id)
+  }, [plLoading, plLoadStart])
+
   async function fetchPlaylistPage(page) {
     const url = plUrlRef.current
     if (!url) return
     setPlLoading(true)
+    setPlLoadStart(Date.now())
+    setPlLoadElapsed(0)
     if (page === 1) setError(null)
     try {
       const res = await fetch(`/api/playlist?url=${encodeURIComponent(url)}&page=${page}&perPage=10`)
@@ -111,6 +133,7 @@ export default function App() {
       setError('Failed to load playlist')
     } finally {
       setPlLoading(false)
+      setPlLoadElapsed(null)
     }
   }
 
@@ -155,6 +178,8 @@ export default function App() {
     setError(null)
     setPreview(null)
     setLoading(true)
+    setLoadingStart(Date.now())
+    setLoadingElapsed(0)
 
     try {
       const res = await fetch('/api/analyze', {
@@ -402,7 +427,11 @@ export default function App() {
             <span className="bounce-dot" />
             <span className="bounce-dot" />
           </div>
-          <p>extracting formats…</p>
+          <p>
+            {loadingElapsed != null && loadingElapsed > 2
+              ? `still working… (${loadingElapsed}s)`
+              : 'extracting formats…'}
+          </p>
         </div>
       )}
 
@@ -425,7 +454,9 @@ export default function App() {
               <span className="pl-icon">▶</span>
               <span className="pl-text">
                 {result.playlist
-                  ? <>Part of playlist <strong>"{result.playlist.title}"</strong> ({result.playlist.count} videos)</>
+                  ? result.playlist.count
+                    ? <>Part of playlist <strong>"{result.playlist.title}"</strong> ({result.playlist.count} videos)</>
+                    : <><strong>"{result.playlist.title}"</strong> — <a href="/extension-install" target="_blank" style={{color:'#e05a3a'}}>install extension</a> for accurate entries</>
                   : <>This URL is part of a playlist</>}
               </span>
               <button
@@ -531,6 +562,9 @@ export default function App() {
               </div>
             ))}
           </div>
+          {plLoadElapsed != null && plLoadElapsed > 2 && (
+            <p className="pl-loading-hint">resolving entries… ({plLoadElapsed}s)</p>
+          )}
         </div>
       )}
 
