@@ -1,49 +1,67 @@
-# VidDetect — Video Detection & Download
+# VidDetect
 
-A full-stack video detection and downloading application (v2.0.0) with a Node.js/Express backend, React frontend, Android app, and browser extension. Detects video sources from URLs across 15+ platforms and downloads via yt-dlp.
+A **video detection & downloader** website that turns any page's video into downloadable files — detect the source, pick a format, and grab MP4 / MP3 / previews.
 
-## Features
+> Node.js (Express + **yt-dlp**) backend · React 19 / Vite client · Chrome MV3 extension + bookmarklet
 
-- **Universal URL Detection** — Supports YouTube, Vimeo, Twitch, Instagram, TikTok, Facebook, Twitter/X, Reddit, Bilibili, and more
-- **Download Engine** — yt-dlp integration for high-quality video downloads
-- **Instagram Extraction** — Post, story, and profile media extraction
-- **YouTube Playlists** — Scrape and download full playlists
-- **React Client** — Clean web UI for managing downloads
-- **Browser Extension** — Chrome extension for sending YouTube mixes/playlists to the app
-- **Android App** — Native Android client with Node.js runtime
-- **Caching System** — Intelligent caching for repeated requests
-- **Docker Support** — Dockerfile for easy deployment
-- **Cloudflare Tunnel** — cloudflared support for remote access
-- **Playlist Scraping** — Custom crawl and scrape functionality
+---
 
-## Tech Stack
+## What it does
 
-**Backend:** Node.js, Express, axios, ytdlp-nodejs, Instagram URL direct
-**Frontend:** React 19, Vite
-**Mobile:** Android (Kotlin, Gradle, Node.js for Mobile)
-**Extension:** Chrome Manifest V3
-**Infrastructure:** Docker, cloudflared, Render (render.yaml)
+Paste or browse a page that contains video (e.g. YouTube), and VidDetect:
 
-## Getting Started
+1. **Detects** the underlying media (via `yt-dlp`) and lists every available format.
+2. Lets you **pick** MP4 video, MP3 audio, or a preview clip.
+3. **Downloads** the selected format to disk — or browse a **playlist** and **batch-queue** files via the browser's File System Access API.
 
-`ash
+It's designed as a **website** (the Android-app layer is a non-goal).
+
+## How it's built
+
+**Backend** (`server.js`)
+- Express server that shells out to **yt-dlp** to probe and fetch media.
+- `detect.js` / `extract.js` / `scrape-playlist.js` — metadata extraction, media extraction, playlist handling.
+- `cache.js` — request caching to avoid re-probing the same URL.
+- `instagram.js` — Instagram-specific detection path.
+- Ships with `Dockerfile` + `render.yaml` (cloud deploy), plus `run-viddetect.bat` for local Windows runs.
+
+**Frontend** (`index.html`, `/client`, React 19 + Vite)
+- Clean UI: detect → list formats → MP4/MP3/preview → playlist browse → batch queue with progress.
+
+**Chrome extension + bookmarklet** (`extension/`, `extension-install.html`, `bookmarklet.html`)
+- A lightweight MV3 extension and a bookmarklet that send the **current page's URL** (including YouTube mixes) to the backend.
+
+## Run locally
+
+```bash
 npm install
-node server.js
-`
+npm start          # starts the Express server
+# open http://localhost:3000
+```
 
-Visit http://localhost:3000 (or the configured port).
+> **ffmpeg** is required for MP3 / merged MP4 downloads. The local bootstrap script (`run-viddetect.bat`) fetches a Windows ffmpeg build. The cloud configs expect ffmpeg to be installed in the deploy environment.
 
-## What's Missing / Future Improvements
+## Repo layout (key files)
 
-- [ ] User authentication and multi-user support
-- [ ] Download queue management with priorities
-- [ ] Format selection (quality, codec, container)
-- [ ] Batch URL import
-- [ ] WebSocket-based real-time progress
-- [ ] Download history and statistics
-- [ ] Proxy/VPN support for geo-restricted content
-- [ ] Scheduled downloads
-- [ ] iOS companion app
-- [ ] Media server integration (Plex, Jellyfin)
-- [ ] Subtitle download and embedding
-- [ ] Dark mode for web UI
+```
+server.js                 Express + yt-dlp backend
+detect.js, extract.js     detection + extraction
+scrape-playlist.js        playlist support
+instagram.js              Instagram path
+cache.js                  caching
+index.html, /client       React 19 + Vite frontend
+extension/, bookmarklet.html   Chrome MV3 + bookmarklet
+Dockerfile, render.yaml   cloud deploy
+run-viddetect.bat         local Windows launcher
+```
+
+## Status & known limitations
+
+- The local **ffmpeg bootstrap is Windows-only** (`run-viddetect.bat`), while the cloud deploy (`Dockerfile`/`render.yaml`) must install ffmpeg itself — MP3/merged downloads currently work best locally.
+- `/api/download` is an open, unauthenticated proxy (fine on LAN, but **risky if deployed publicly** — no auth or rate limiting).
+- A couple of stale `_test*.mjs` files still reference an old removed API.
+- The Android-app layer was intentionally dropped (this is a website); some leftover Android/server copies remain in the repo and can be ignored or removed.
+
+## See also
+
+The video detection logic here pairs with Dali's **quran-reel-detector** and **video-detector** experiments.
