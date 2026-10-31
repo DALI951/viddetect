@@ -1,32 +1,37 @@
 # HANDOFF — viddetect
 
-Updated 2026-10-31.
+Updated 2026-10-31. **Running at http://localhost:3001.**
 
 ## Done
 - Fresh clone → `C:\Users\Dali\Projects\viddetect` (branch `master`, v2.0.0).
 - `npm install` (87 pkgs) + `cd client && npm install` (135 pkgs) + `npm run build` → OK
-  (`client/dist` 207 kB JS, 10.7 kB CSS).
-- Server started: **http://localhost:3001**, HTTP 200, browser opened.
-- Live API test passed: `POST /api/analyze` on a real YouTube URL → title + source + **8 formats**.
+  (`client/dist`: 207 kB JS, 10.7 kB CSS).
+- Server started, browser opened.
+- **Full loop verified end to end:**
+  - `POST /api/analyze` → real title, source `YouTube`, 8 formats.
+  - `GET /api/download ...&format=mp3` → **4.88 MB MP3, ID3 header**.
+  - `GET /api/download ...&quality=360&format=mp4` → **12.96 MB MP4, ffprobe: h264 640x360 +
+    aac, 213.04 s** (merge path works).
+- ffmpeg + ffprobe installed (ffmpeg N-128222, 162 MB each) in
+  `node_modules/ytdlp-nodejs/bin/`.
 
 ## In progress
-- ffmpeg: the in-process bootstrap stalled at 0 bytes. Manual `curl -L -C -` download running,
-  then extract `ffmpeg.exe` + `ffprobe.exe` into `node_modules/ytdlp-nodejs/bin/`.
-  Until that lands: MP3 extraction and merged (video+audio) MP4 downloads are broken, combined
-  formats still work.
+Nothing.
 
 ## Next
-1. Drop in ffmpeg/ffprobe, re-test `GET /api/download` for MP3 and a 1080p merged MP4.
-2. Fix the stale `_test.mjs` / `_test2.mjs` (they call the removed `formatId` API → `quality`).
-3. Open-proxy hardening on `/api/download` before any public deploy (no auth/rate limit today).
-4. Optional cleanup: delete the Android server copy + committed bundles if the app layer is
-   officially dropped.
+1. Fix stale `_test.mjs` / `_test2.mjs` — they still call the removed `formatId` arg (now
+   `quality`), so they fail for no reason.
+2. Harden `/api/download` (no auth, no rate limit) before any public deploy — it is an open
+   proxy as written.
+3. Optional cleanup if the Android layer is officially dead: `server-android.js` (divergent
+   copy, missing ext/bookmarklet routes) + committed bundles `nodejs-bundle.cjs`,
+   `combined-android.cjs`, `assets/main.js`.
 
 ## Environment
-- Node 26.5.0, npm 11.17.0. Windows 10 LTSC. Port 3001.
-- yt-dlp binary present (22.5 MB) inside `node_modules/ytdlp-nodejs/bin/`.
+- Node 26.5.0, npm 11.17.0, Windows 10 LTSC, port 3001.
+- `npm warn allow-scripts` is expected (npm 11); binaries are already on disk.
 
 ## Watch-outs
-- npm 11 prints `allow-scripts` warnings — the binaries are still there; don't chase ghosts.
-- `client/dist` is required for the React UI; without a build the server falls back to the old
-  root `index.html`.
+- `ensureFfmpeg()` in `server.js` **hangs forever at 0 bytes** on this machine (seen
+  2026-10-31). Never debug code because of it — install the binaries by hand (RULES.md → Traps).
+- `client/dist` must exist or the server silently serves the old root `index.html` fallback.
