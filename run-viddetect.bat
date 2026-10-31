@@ -1,19 +1,18 @@
 @echo off
-cd /d C:\Project\viddetect
-echo Installing dependencies (first time only)...
-call npm install
+cd /d "%~dp0"
+if not exist "node_modules" (
+  echo Installing dependencies (first time only)...
+  call npm install
+)
+if not exist "client\dist\index.html" (
+  echo Building frontend...
+  pushd client
+  call npm install
+  call npm run build
+  popd
+)
 echo.
-echo Building frontend...
-cd client
-call npm install
-call npm run build
-cd ..
-echo.
-echo Starting viddetect...
+echo Starting viddetect on http://localhost:3001
 start "viddetect" cmd /c "node server.js"
 timeout /t 3 /nobreak >nul
 start "" "http://localhost:3001"
-echo.
-echo viddetect is running at http://localhost:3001
-echo.
-pause
